@@ -1,37 +1,58 @@
 package main
 
 import (
+    "html/template"
     "log"
     "net/http"
-    "github.com/gorilla/websocket"
-    "your-project/internal/binance"
 )
 
-var upgrader = websocket.Upgrader{
-    CheckOrigin: func(r *http.Request) bool {
-        return true // Allow all origins for development
-    },
+type PageData struct {
+    Videos []Video
+}
+
+type Video struct {
+    ID          string
+    Title       string
+    Description string
 }
 
 func main() {
     // Serve static files
     fs := http.FileServer(http.Dir("static"))
-    http.Handle("/", fs)
+    http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-    // WebSocket endpoint
-    http.HandleFunc("/ws/prices", func(w http.ResponseWriter, r *http.Request) {
-        conn, err := upgrader.Upgrade(w, r, nil)
-        if err != nil {
-            log.Printf("Failed to upgrade connection: %v", err)
-            return
-        }
-        defer conn.Close()
-
-        binance.StreamBinancePrices(conn)
-    })
+    // Main page handler
+    http.HandleFunc("/", handleHome)
 
     log.Println("Server starting on :8080")
     if err := http.ListenAndServe(":8080", nil); err != nil {
         log.Fatal(err)
+    }
+}
+
+func handleHome(w http.ResponseWriter, r *http.Request) {
+    data := PageData{
+        Videos: []Video{
+            {
+                ID:          "EzGPmg4fFL8",
+                Title:       "Epic Snowboarding",
+                Description: "GoPro: Best of 2023",
+            },
+            {
+                ID:          "SCuY6osbOTs",
+                Title:       "Mountain Biking",
+                Description: "Trail Riding Highlights",
+            },
+        },
+    }
+
+    tmpl, err := template.ParseFiles("templates/index.html")
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    if err := tmpl.Execute(w, data); err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 }
