@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Binance Price Stream</title>
+</head>
+<body>
+    <div id="status">Connecting...</div>
+    <div id="price"></div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8080/ws/prices');
+        
+        ws.onopen = () => {
+            document.getElementById('status').textContent = 'Connected';
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById('price').textContent = `BTC Price: ${data.p}`;
+        };
+
+        ws.onerror = (error) => {
+            document.getElementById('status').textContent = 'Error connecting';
+            console.error('WebSocket error:', error);
+        };
+    </script>
+</body>
+</html> 
